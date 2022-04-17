@@ -11,68 +11,67 @@
  */
 package com.lamp.atom.service.operator.entity;
 
-import com.lamp.atom.service.domain.NodeModel;
-import com.lamp.atom.service.domain.NodeStatus;
-import com.lamp.atom.service.domain.NodeType;
+import com.lamp.atom.service.domain.*;
+
 import io.swagger.annotations.ApiModel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-@ApiModel(value="NodeEntity",description="节点类")
+@EqualsAndHashCode(callSuper = true)
+@ApiModel(value = "NodeEntity", description = "节点类")
 public class NodeEntity extends BaseEntity {
 
-    private static final long serialVersionUID = -2786281072838530374L;
+	private static final long serialVersionUID = -2786281072838530374L;
 
-    /**
-     * 空间id
-     */
-    private Long spaceId;
+	/**
+	 * 空间id
+	 */
+	private Long spaceId;
 
-    /**
-     * 节点模板
-     */
-    private Long nodeTemplateId;
+	/**
+	 * 节点模板
+	 */
+	private Long nodeTemplateId;
 
-    /**
-     * 节点名
-     */
-    private String nodeName;
+	/**
+	 * 节点名
+	 */
+	private String nodeName;
 
-    /**
-     * 算子来源类型
-     */
-    private NodeType nodeType;
+	/**
+	 * operator：算子来源类型
+	 */
+	private OperatorSourceType operatorSourceType;
 
-    /**
-     * 算子运行模式
-     */
-    private NodeModel nodeModel;
+	/**
+	 * operator：算子类型
+	 */
+	private OperatorRuntimeType operatorRuntimeType;
 
-    /**
-     * 执行次数
-     */
-    private Integer nodeEpoch;
+	/**
+	 * 算子运行模式
+	 */
+	private NodeModel nodeModel;
 
-    /**
-     * 训练预计时长
-     */
-    private String nodePlanRuntimes;
+	/**
+	 * 执行次数
+	 */
+	private Integer nodeEpoch;
 
-    /**
-     * 节点状态
-     */
-    private NodeStatus nodeStatus;
+	/**
+	 * 训练预计时长
+	 */
+	private String nodePlanRuntimes;
 
-    /**
-     * 训练优先级
-     */
-    private Integer operatorPriority;
+	/**
+	 * 节点状态
+	 */
+	private NodeStatus nodeStatus;
 
-    public NodeEntity(Long id) {
-        super(id);
-    }
+	/**
+	 * 训练优先级
+	 */
+	private Integer operatorPriority;
+
 }

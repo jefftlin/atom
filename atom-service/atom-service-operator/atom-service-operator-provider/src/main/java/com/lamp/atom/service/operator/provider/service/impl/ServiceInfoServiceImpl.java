@@ -11,14 +11,15 @@
  */
 package com.lamp.atom.service.operator.provider.service.impl;
 
-import com.lamp.atom.service.operator.entity.ServiceInfoEntity;
-import com.lamp.atom.service.operator.provider.mapper.ServiceInfoMapper;
-import com.lamp.atom.service.operator.service.ServiceInfoService;
+import java.util.List;
+
 import org.apache.dubbo.config.annotation.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import com.lamp.atom.service.operator.entity.ServiceInfoEntity;
+import com.lamp.atom.service.operator.provider.mapper.ServiceInfoMapper;
+import com.lamp.atom.service.operator.service.ServiceInfoService;
 
 @Service
 @Transactional
@@ -55,5 +56,10 @@ public class ServiceInfoServiceImpl implements ServiceInfoService {
     @Override
     public ServiceInfoEntity queryServiceInfoEntity(ServiceInfoEntity serviceInfoEntity) {
         return serviceInfoMapper.queryServiceInfoEntity(serviceInfoEntity);
+    }
+
+    @Override
+    public ServiceInfoEntity queryServiceInfoEntityById(Long id) {
+        return serviceInfoMapper.queryServiceInfoEntityById(id);
     }
 }

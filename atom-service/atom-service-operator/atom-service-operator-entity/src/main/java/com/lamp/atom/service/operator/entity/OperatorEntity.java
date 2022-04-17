@@ -11,18 +11,19 @@
  */
 package com.lamp.atom.service.operator.entity;
 
-import com.lamp.atom.service.domain.*;
-import com.lamp.atom.service.domain.OperatorRuntimeStatus;
+import com.lamp.atom.service.domain.CodeMode;
+import com.lamp.atom.service.domain.DeployType;
+import com.lamp.atom.service.domain.OperatorModel;
+import com.lamp.atom.service.domain.OperatorRuntimeType;
+import com.lamp.atom.service.domain.OperatorSourceType;
 
 import io.swagger.annotations.ApiModel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 @ApiModel(value="OperatorEntity",description="算子类")
 public class OperatorEntity extends BaseEntity {
 
@@ -31,13 +32,11 @@ public class OperatorEntity extends BaseEntity {
     /**
      * 空间id
      */
-    @NonNull
     private Long spaceId;
 
     /**
      * 算子模板
      */
-    @NonNull
     private Long operatorTemplateId;
 
     /**
@@ -48,25 +47,21 @@ public class OperatorEntity extends BaseEntity {
     /**
      * 算子源id
      */
-    @NonNull
     private Long operatorSourceId;
 
     /**
      * 算子来源类型
      */
-    @NonNull
     private OperatorSourceType operatorSourceType;
 
     /**
      * 算子类型
      */
-    @NonNull
     private OperatorRuntimeType operatorRuntimeType;
 
     /**
      * 算子运行模式
      */
-    @NonNull
     private OperatorModel operatorModel;
 
     /**
@@ -77,19 +72,16 @@ public class OperatorEntity extends BaseEntity {
     /**
      * 资源账户id
      */
-    @NonNull
     private Long resourcesAccountId;
 
     /**
      * 加载模式
      */
-    @NonNull
     private CodeMode codeMode;
 
     /**
      * 加载地址
      */
-    @NonNull
     private String codeAddress;
 
     /**
@@ -123,26 +115,6 @@ public class OperatorEntity extends BaseEntity {
     private String modelConf;
 
     /**
-     * cpu使用率
-     */
-    private String cpu;
-
-    /**
-     * gpu使用率
-     */
-    private String gpu;
-
-    /**
-     * 内存使用率
-     */
-    private String men;
-
-    /**
-     * 显卡使用率
-     */
-    private String displayCard;
-
-    /**
      * 训练轮数
      */
     private Integer operatorEpoch;
@@ -152,28 +124,14 @@ public class OperatorEntity extends BaseEntity {
      */
     private String operatorPlanRuntimes;
 
-    /**
-     * 训练状态
-     */
-    @NonNull
-    private OperatorRuntimeStatus operatorRuntimeStatus;
-
-    /**
+     /**
      * 训练优先级
      */
     private Integer operatorPriority;
-
-    /**
-     * 部署实例
-     */
-    private Long caseId;
 
     /**
      * 部署类型
      */
     private DeployType deployType;
 
-    public OperatorEntity(Long id) {
-        super(id);
-    }
 }

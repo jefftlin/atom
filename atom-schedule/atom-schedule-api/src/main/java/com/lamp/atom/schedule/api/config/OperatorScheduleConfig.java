@@ -16,12 +16,12 @@ import lombok.Data;
 @Data
 public class OperatorScheduleConfig {
 
-	private OperatorScheduleKubernetesConfig operatorScheduleKubernetesConfig;
+    private AtomScheduleKubernetesConfig operatorScheduleKubernetesConfig;
 
-	private OperatorScheduleRpcConfig operatorScheduleRpcConfig;
+    private OperatorScheduleRpcConfig operatorScheduleRpcConfig;
 
-	public OperatorScheduleConfig() {
-		this.operatorScheduleKubernetesConfig = new OperatorScheduleKubernetesConfig();
-		this.operatorScheduleRpcConfig = new OperatorScheduleRpcConfig();
-	}
+    public OperatorScheduleConfig() {
+        this.operatorScheduleKubernetesConfig = new DefaultOperatorScheduleKubernetesConfig();
+        this.operatorScheduleRpcConfig = new OperatorScheduleRpcConfig();
+    }
 }

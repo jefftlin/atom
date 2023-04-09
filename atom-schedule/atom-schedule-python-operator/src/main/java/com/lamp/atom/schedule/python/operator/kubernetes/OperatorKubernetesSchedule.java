@@ -20,10 +20,14 @@ import com.lamp.atom.schedule.api.AtomOperatorShedule;
 import com.lamp.atom.schedule.api.AtomServiceShedule;
 import com.lamp.atom.schedule.api.Schedule;
 import com.lamp.atom.schedule.api.ScheduleReturn;
+import com.lamp.atom.schedule.api.config.AtomScheduleKubernetesConfig;
 import com.lamp.atom.schedule.api.config.OperatorScheduleKubernetesConfig;
+import com.lamp.atom.schedule.api.config.OperatorScheduleKubernetesConfigFactory;
+import com.lamp.atom.schedule.api.deploy.AtomRuntimeInstanceConstraints;
 import com.lamp.atom.schedule.api.deploy.AtomInstances;
 
-import io.fabric8.kubernetes.api.model.NamespaceList;
+import com.lamp.atom.schedule.python.operator.kubernetes.builder.SessionOperatorKubernetesBuilder;
+import com.lamp.atom.schedule.python.operator.kubernetes.builder.StandaloneOperatorKubernetesBuilder;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
@@ -58,32 +62,35 @@ public class OperatorKubernetesSchedule implements AtomOperatorShedule, AtomServ
 
 	private KubernetesClient client;
 
-	private OperatorScheduleKubernetesConfig operatorKubernetesConfig;
+	private AtomScheduleKubernetesConfig atomScheduleKubernetesConfig;
 
-	public OperatorKubernetesSchedule(OperatorScheduleKubernetesConfig operatorKubernetesConfig) throws Exception {
-		this.operatorKubernetesConfig = operatorKubernetesConfig;
-		if (Objects.nonNull(operatorKubernetesConfig.getMasterUrl())) {
-			client = new DefaultKubernetesClient(operatorKubernetesConfig.getMasterUrl());
-		} else if (Objects.nonNull(operatorKubernetesConfig.getConfigYaml())) {
-			Config config = Config.fromKubeconfig(operatorKubernetesConfig.getConfigYaml());
+	public OperatorKubernetesSchedule(AtomScheduleKubernetesConfig atomScheduleKubernetesConfig) throws Exception {
+		this.atomScheduleKubernetesConfig = atomScheduleKubernetesConfig;
+		if (Objects.nonNull(atomScheduleKubernetesConfig.getMasterUrl())) {
+			client = new DefaultKubernetesClient(atomScheduleKubernetesConfig.getMasterUrl());
+		} else if (Objects.nonNull(atomScheduleKubernetesConfig.getConfigYaml())) {
+			Config config = Config.fromKubeconfig(atomScheduleKubernetesConfig.getConfigYaml());
 			client = new DefaultKubernetesClient(config);
 		}
 	}
 
+	private OperatorScheduleKubernetesConfig getKubernetesConfig(Schedule schedule, AtomScheduleKubernetesConfig atomScheduleKubernetesConfig) {
+		return OperatorScheduleKubernetesConfigFactory.createKubernetesConfig(schedule, atomScheduleKubernetesConfig);
+	}
+
 	@Override
 	public void createService(Schedule schedule) {
+		OperatorScheduleKubernetesConfig kubernetesConfig = getKubernetesConfig(schedule, atomScheduleKubernetesConfig);
+
+		// Build operator
 		StandaloneOperatorKubernetesBuilder operatorKubernetesBuilder = new StandaloneOperatorKubernetesBuilder();
 		operatorKubernetesBuilder.setSchedule(schedule);
-		operatorKubernetesBuilder.setOperatorKubernetesConfig(operatorKubernetesConfig);
+		operatorKubernetesBuilder.setOperatorKubernetesConfig(kubernetesConfig);
 
-		// for test
-		NamespaceList namespaceList = client.namespaces().list();
-		namespaceList.getItems()
-				.forEach(namespace ->
-						System.out.println(namespace.getMetadata().getName() + ":" + namespace.getStatus().getPhase()));
-
-		Deployment deployment = client.apps().deployments().inNamespace(operatorKubernetesConfig.getNamespace())
-				.createOrReplace(operatorKubernetesBuilder.getDeployment());
+		Deployment buildDeployment = operatorKubernetesBuilder.getOperator();
+		Deployment deployment = client.apps().deployments()
+				.inNamespace(kubernetesConfig.getNamespace())
+				.createOrReplace(buildDeployment);
 		log.info("deployment info : {}", deployment);
 	}
 
@@ -98,22 +105,24 @@ public class OperatorKubernetesSchedule implements AtomOperatorShedule, AtomServ
 
 	@Override
 	public ScheduleReturn createOperators(Schedule schedule) {
+		OperatorScheduleKubernetesConfig kubernetesConfig = getKubernetesConfig(schedule, atomScheduleKubernetesConfig);
+
+		// Build operator
 		SessionOperatorKubernetesBuilder operatorKubernetesBuilder = new SessionOperatorKubernetesBuilder();
 		operatorKubernetesBuilder.setSchedule(schedule);
-		operatorKubernetesBuilder.setOperatorKubernetesConfig(operatorKubernetesConfig);
+		operatorKubernetesBuilder.setOperatorKubernetesConfig(kubernetesConfig);
 
 		try {
-			Job atomJob = operatorKubernetesBuilder.getJob();
-			Job job = client.batch().v1().jobs().inNamespace(operatorKubernetesConfig.getNamespace())
-				.createOrReplace(atomJob);
+			Job buildJob = operatorKubernetesBuilder.getOperator();
+			Job job = client.batch().v1().jobs()
+					.inNamespace(kubernetesConfig.getNamespace())
+					.createOrReplace(buildJob);
 			log.info("job info : {}", job);
-			client.batch().v1().jobs().inNamespace(operatorKubernetesConfig.getNamespace())
-					.createOrReplace(operatorKubernetesBuilder.getJob());
 
 			// 注册服务
 			List<AtomInstances> instancesList = schedule.getDeploy().getInstancesList();
 			for (AtomInstances atomInstance: instancesList) {
-				namingService.registerInstance("atom-runtime-kubernetes-service", atomInstance.getIp(), atomInstance.getPort());
+				namingService.registerInstance(AtomRuntimeInstanceConstraints.ATOM_RUNTIME_TRAIN_SERVICE_NAME, atomInstance.getIp(), atomInstance.getPort());
 			}
 
 			return new ScheduleReturn(200, "SUCCESS");
@@ -131,19 +140,22 @@ public class OperatorKubernetesSchedule implements AtomOperatorShedule, AtomServ
 
 
 	private void deleteDeployment(Schedule schedule) {
+		OperatorScheduleKubernetesConfig kubernetesConfig = getKubernetesConfig(schedule, atomScheduleKubernetesConfig);
 		RollableScalableResource<Deployment> deploymentResource = client.apps().deployments()
-				.inNamespace(operatorKubernetesConfig.getNamespace()).withName(schedule.getNodeName());
+				.inNamespace(kubernetesConfig.getNamespace()).withName(schedule.getNodeName());
 		this.deleteBehavior(deploymentResource, deploymentResource);
 	}
 
 	private void deleteJob(Schedule schedule) {
+		OperatorScheduleKubernetesConfig kubernetesConfig = getKubernetesConfig(schedule, atomScheduleKubernetesConfig);
 		ScalableResource<Job> jobResource = client.batch().v1().jobs()
-				.inNamespace(operatorKubernetesConfig.getNamespace()).withName(schedule.getNodeName());
+				.inNamespace(kubernetesConfig.getNamespace()).withName(schedule.getNodeName());
 		this.deleteBehavior(jobResource, jobResource);
 	}
 
 	private void deletePods(Schedule schedule) {
-		PodResource<Pod> podsResource = client.pods().inNamespace(operatorKubernetesConfig.getNamespace())
+		OperatorScheduleKubernetesConfig kubernetesConfig = getKubernetesConfig(schedule, atomScheduleKubernetesConfig);
+		PodResource<Pod> podsResource = client.pods().inNamespace(kubernetesConfig.getNamespace())
 				.withName(schedule.getNodeName());
 		this.deleteBehavior(podsResource, podsResource);
 	}

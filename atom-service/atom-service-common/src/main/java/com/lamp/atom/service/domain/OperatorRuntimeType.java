@@ -57,6 +57,10 @@ public enum OperatorRuntimeType {
 
     String name;
 
+    public String getName() {
+        return this.name;
+    }
+
     OperatorRuntimeType(String name) {
         this.name = name;
     }

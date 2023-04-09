@@ -9,7 +9,7 @@
  *MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
  *See the Mulan PubL v2 for more details.
  */
-package com.lamp.atom.schedule.python.operator.kubernetes;
+package com.lamp.atom.schedule.python.operator.kubernetes.builder;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -20,10 +20,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 
-import com.alibaba.fastjson.JSON;
 import com.lamp.atom.schedule.api.Schedule;
 import com.lamp.atom.schedule.api.config.OperatorScheduleKubernetesConfig;
 
+import com.lamp.atom.schedule.api.deploy.KubernetesOperatorConstants;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarSource;
 import io.fabric8.kubernetes.api.model.ObjectFieldSelector;
@@ -41,7 +41,7 @@ import org.yaml.snakeyaml.Yaml;
  * @author laohu
  *
  */
-public class StandaloneOperatorKubernetesBuilder {
+public class StandaloneOperatorKubernetesBuilder extends AbstractOperatorKubernetesBuilder<DeploymentBuilder, Deployment> {
 
 	@Setter
 	private OperatorScheduleKubernetesConfig operatorKubernetesConfig;
@@ -49,16 +49,16 @@ public class StandaloneOperatorKubernetesBuilder {
 	@Setter
 	private Schedule schedule;
 
-	private DeploymentBuilder job = new DeploymentBuilder();
-
-	private void job() {
+	@Override
+	public void job() {
 		job.withApiVersion("apps/v1");
 		// 训练 是job volcano
 		// 推理 是deployment , 推理还有扩容，缩容 ， 起多少个，都不一样呀
 		job.withKind("Deployment");
 	}
 
-	private void metadata() {
+	@Override
+	public void metadata() {
 		MetadataNested<DeploymentBuilder> metadata = job.withNewMetadata();
 		// nvidia.com/gpu
 		metadata
@@ -67,13 +67,15 @@ public class StandaloneOperatorKubernetesBuilder {
 			    // 空间名
 				// 场景名
 				// TODO 真麻烦，好难。
-				.withName("atom-runtime-standalone-" + this.schedule.getNodeName())
+				.withName(KubernetesOperatorConstants.STANDALONE_OPERATOR_NAME_PREFIX
+						+ this.schedule.getNodeName())
 				// 标签，需要几个
 				//
 				.withLabels(this.schedule.getLabels());
 		metadata.endMetadata();
 	}
 
+	@Override
 	public void spec() {
 		ResourceRequirements resourceRequirements = new ResourceRequirements();
 		Map<String, Quantity> requests = new HashMap<>();
@@ -109,7 +111,7 @@ public class StandaloneOperatorKubernetesBuilder {
 				.addNewContainer().withName(this.schedule.getNodeName())
 				.withImage(Objects.isNull(value)
 						? this.operatorKubernetesConfig.getCpuContainerName()
-						: this.operatorKubernetesConfig.getGpcContainerName())
+						: this.operatorKubernetesConfig.getGpuContainerName())
 				.withResources(resourceRequirements)
 				.withEnv(envList)
 				.endContainer()
@@ -117,18 +119,16 @@ public class StandaloneOperatorKubernetesBuilder {
 				.endTemplate()
 				.endSpec();
 	}
-	
-	public Deployment getDeployment() {
-		this.job();
-		this.metadata();
-		this.spec();
-		System.out.println(JSON.toJSON(job.build()));
+
+	@Override
+	public void preBuild() {
+		this.job = new DeploymentBuilder();
+
 		Yaml yaml = new Yaml();
 		try {
 			yaml.dump(job.build(), new FileWriter("standalone.yaml"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return job.build();
 	}
 }

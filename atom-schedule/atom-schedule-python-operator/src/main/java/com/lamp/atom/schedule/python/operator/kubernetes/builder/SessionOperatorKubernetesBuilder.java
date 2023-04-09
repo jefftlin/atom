@@ -9,7 +9,7 @@
  *MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
  *See the Mulan PubL v2 for more details.
  */
-package com.lamp.atom.schedule.python.operator.kubernetes;
+package com.lamp.atom.schedule.python.operator.kubernetes.builder;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -24,6 +24,7 @@ import com.alibaba.fastjson.JSON;
 import com.lamp.atom.schedule.api.Schedule;
 import com.lamp.atom.schedule.api.config.OperatorScheduleKubernetesConfig;
 
+import com.lamp.atom.schedule.api.deploy.KubernetesOperatorConstants;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarSource;
 import io.fabric8.kubernetes.api.model.ObjectFieldSelector;
@@ -40,7 +41,7 @@ import lombok.Setter;
  * @author laohu
  *
  */
-public class SessionOperatorKubernetesBuilder {
+public class SessionOperatorKubernetesBuilder extends AbstractOperatorKubernetesBuilder<JobBuilder, Job> {
 
 	@Setter
 	private OperatorScheduleKubernetesConfig operatorKubernetesConfig;
@@ -48,26 +49,25 @@ public class SessionOperatorKubernetesBuilder {
 	@Setter
 	private Schedule schedule;
 
-	private JobBuilder job = new JobBuilder();
 
-	
-	
-	private void job() {
+	@Override
+	public void job() {
 		job.withApiVersion("batch/v1");
 		// 训练 是job volcano
 		// 推理 是deployment , 推理还有扩容，缩容 ， 起多少个，都不一样呀
 		job.withKind("Job");
 	}
 
-	private void metadata() {
+	@Override
+	public void metadata() {
 		MetadataNested<JobBuilder> metadata = job.withNewMetadata();
 		// nvidia.com/gpu
 		metadata
 				// GPU 还是cpu镜像
-				.withName("atom-runtime-session-"
+				.withName(KubernetesOperatorConstants.SESSION_OPERATOR_NAME_PREFIX
 					+ this.schedule.getNodeName()
 					+ "-"
-					+ new SimpleDateFormat("yyyyMMddhhmmss").format(new Date(System.currentTimeMillis())))
+					+ new SimpleDateFormat("yyyyMMddHHmmss").format(new Date(System.currentTimeMillis())))
 				// 标签，需要几个
 				// 第一个 算子的名字+序列
 				// 的哥
@@ -75,6 +75,7 @@ public class SessionOperatorKubernetesBuilder {
 		metadata.endMetadata();
 	}
 
+	@Override
 	public void spec() {
 		ResourceRequirements resourceRequirements = new ResourceRequirements();
 		Map<String, Quantity> requests = new HashMap<>();
@@ -121,7 +122,7 @@ public class SessionOperatorKubernetesBuilder {
 				.withName(this.schedule.getNodeName())
 				.withImage(Objects.isNull(value)
 						? this.operatorKubernetesConfig.getCpuContainerName()
-						: this.operatorKubernetesConfig.getGpcContainerName())
+						: this.operatorKubernetesConfig.getGpuContainerName())
 				.withResources(resourceRequirements)
 				.withEnv(envList)
 				.endContainer()
@@ -129,11 +130,9 @@ public class SessionOperatorKubernetesBuilder {
 				.endTemplate()
 				.endSpec();
 	}
-	
-	public Job getJob() {
-		this.job();
-		this.metadata();
-		this.spec();
-		return this.job.build();
+
+	@Override
+	public void preBuild() {
+		this.job = new JobBuilder();
 	}
 }

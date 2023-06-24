@@ -22,6 +22,8 @@ import java.util.Properties;
 import javax.annotation.PostConstruct;
 
 import com.lamp.atom.service.domain.*;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.dubbo.config.annotation.Reference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -320,17 +322,15 @@ public class TaskEventController {
 
         // 3、获取调度信息和Runtime信息
         // 包括节点Runtime、算子Runtime、调度Runtime
-        List<RuntimeEntity> runtimeEntityList = new ArrayList<>();
-        Schedule schedule = getSchedule(taskParam, node, runtimeEntityList);
+        Pair<Schedule, List<RuntimeEntity>> pair = getScheduleRuntime(taskParam, node);
 
         // 4、保存Runtime信息
-        //todo 返回自增主键ID
-        runtimeService.batchInsertRuntimeEntity(runtimeEntityList);
+        runtimeService.batchInsertRuntimeEntity(pair.getRight());
 
         // 5、开启调度
         ScheduleReturn scheduleReturn = new ScheduleReturn();
         try {
-            scheduleReturn = atomScheduleService.createOperators(schedule);
+            scheduleReturn = atomScheduleService.createOperators(pair.getLeft());
             if (200 != scheduleReturn.getScheduleStatus()) {
                 throw new Exception("createOperators exception!(调度异常)");
             }
@@ -338,8 +338,8 @@ public class TaskEventController {
         } catch (Exception e) {
             log.error("createOperators exception!(调度异常)");
         }
-        updateRuntimeStatus(runtimeEntityList, scheduleReturn.getScheduleStatus());
-        runtimeService.batchUpdateRuntimeEntity(runtimeEntityList);
+        updateRuntimeStatus(pair.getRight(), scheduleReturn.getScheduleStatus());
+        runtimeService.batchUpdateRuntimeEntity(pair.getRight());
 
         //todo 更新节点信息（修改时间）
 
@@ -538,8 +538,8 @@ public class TaskEventController {
         node.setId(taskParam.getTaskId());
         node = nodeService.queryNodeEntity(node);
 
-        Schedule schedule = getSchedule(taskParam, node, null);
-        atomScheduleService.uninstallOperators(schedule);
+        Pair<Schedule, List<RuntimeEntity>> pair = getScheduleRuntime(taskParam, node);
+        atomScheduleService.uninstallOperators(pair.getLeft());
 
         // 3、获取下一节点，训练算子完成后启动推理算子
         if (OperatorRuntimeType.TRAIN == taskParam.getOperatorRuntimeType()) {
@@ -618,8 +618,8 @@ public class TaskEventController {
         node.setId(taskParam.getTaskId());
         node = nodeService.queryNodeEntity(node);
 
-        Schedule schedule = getSchedule(taskParam, node, null);
-        atomScheduleService.uninstallOperators(schedule);
+        Pair<Schedule, List<RuntimeEntity>> pair = getScheduleRuntime(taskParam, node);
+        atomScheduleService.uninstallOperators(pair.getLeft());
 
         return ResultObjectEnums.SUCCESS.getResultObject();
     }
@@ -668,11 +668,10 @@ public class TaskEventController {
      * 获取Schedule和Runtime数据
      * @param taskParam
      * @param node
-     * @param runtimeEntityList
      * @return
      * @throws NacosException
      */
-    public Schedule getSchedule(TaskParam taskParam, NodeEntity node, List<RuntimeEntity> runtimeEntityList) throws NacosException {
+    public Pair<Schedule, List<RuntimeEntity>> getScheduleRuntime(TaskParam taskParam, NodeEntity node) throws NacosException {
         // 2、根据资源关系查出依赖表
         ResourceRelationEntity resourceRelationEntity = new ResourceRelationEntity();
         resourceRelationEntity.setRelationType(RelationType.RESOURCE_RELATION);
@@ -682,14 +681,13 @@ public class TaskEventController {
 
         // 3、封装Schedule数据和Runtime数据
         Schedule schedule = new Schedule();
+        List<RuntimeEntity> runtimeEntityList = new ArrayList<>();
+        Pair<Schedule, List<RuntimeEntity>> pair = new ImmutablePair<>(schedule, runtimeEntityList);
 
         // 设置部署实例和调度的object
         Deploy deploy = new Deploy();
         schedule.setDeploy(deploy);
         List<AtomInstances> instancesList = new ArrayList<>();
-        //todo 部署实例获取 使用随机端口
-        deploy.setCount(instancesList.size());
-        deploy.setInstancesList(instancesList);
 
         // 获取部署实例
         List<String> serviceNames = new ArrayList<>();
@@ -703,7 +701,8 @@ public class TaskEventController {
                 instancesList.add(atomInstances);
             }
         }
-
+        deploy.setCount(instancesList.size());
+        deploy.setInstancesList(instancesList);
         //todo 当没实例时，抛出异常
 
         CreateOperator operatorCreateTo = new CreateOperator();
@@ -771,6 +770,8 @@ public class TaskEventController {
             }
         }
 
+        List<SourceAndConnect> sourceAndConnects = new ArrayList<>();
+        operatorCreateTo.setSourceAndConnects(sourceAndConnects);
         for (ResourceRelationEntity resourceRelation : resourceRelations) {
             // 模型
             if (resourceRelation.getBeRelatedType() == ResourceType.MODEL) {
@@ -814,7 +815,7 @@ public class TaskEventController {
                     kubernetesRuntimeList.add(kubernetesRuntime);
                 }
             }
-            // 数据源
+            // 数据源和连接
             if (resourceRelation.getBeRelatedType() == ResourceType.DATASOURCE) {
                 DataSourceEntity dataSource = new DataSourceEntity();
                 dataSource.setId(resourceRelation.getBeRelatedId());
@@ -823,13 +824,7 @@ public class TaskEventController {
                 connection.setId(dataSource.getConnectionId());
                 connection = connectionService.queryConnectionEntity(connection);
                 operatorCreateTo.setModelConnect(connection);
-
-                SourceAndConnect sourceAndConnect = new SourceAndConnect();
-                sourceAndConnect.setSourceTo(dataSource);
-                sourceAndConnect.setConnectTo(connection);
-                List<SourceAndConnect> sourceAndConnects = new ArrayList<>();
-                sourceAndConnects.add(sourceAndConnect);
-                operatorCreateTo.setSourceAndConnects(sourceAndConnects);
+                sourceAndConnects.add(new SourceAndConnect(dataSource, connection));
 
                 for (RuntimeEntity nodeRuntime: nodeRuntimeList) {
                     nodeRuntime.setServiceInfoId(resourceRelation.getBeRelatedId());
@@ -842,15 +837,11 @@ public class TaskEventController {
                 }
             }
 
-            // todo operatorCreateTo设置的SourceAccountTo需要用户管理模块提供
-
             // 服务配置信息
             if (resourceRelation.getBeRelatedType() == ResourceType.SERVICE_INFO) {
                 ServiceInfoEntity serviceInfo = serviceInfoService.queryServiceInfoEntityById(resourceRelation.getBeRelatedId());
-                hardwareConfig.put("cpu", String.valueOf(serviceInfo.getSiCpu()));
-//                hardwareConfig.put("gpu", String.valueOf(serviceInfo.getSiGpu()));
+                hardwareConfig.put("cpu", serviceInfo.getSiCpu() + "m");
                 hardwareConfig.put("memory", serviceInfo.getSiDisplayMemory() + "Gi");
-//                hardwareConfig.put("displayMemory", String.valueOf(serviceInfo.getSiDisplayMemory()));
                 labelMap.put(serviceInfo.getSiType(), serviceInfo.getSiLabel());
 
                 for (RuntimeEntity nodeRuntime: nodeRuntimeList) {
@@ -866,14 +857,9 @@ public class TaskEventController {
             // 服务最大配置信息
             if (resourceRelation.getBeRelatedType() == ResourceType.MAX_SERVICE_INFO) {
                 ServiceInfoEntity serviceInfo = serviceInfoService.queryServiceInfoEntityById(resourceRelation.getBeRelatedId());
-                limits.put("cpu", String.valueOf(serviceInfo.getSiCpu()));
+                limits.put("cpu", serviceInfo.getSiCpu() + "m");
                 limits.put("memory", serviceInfo.getSiMemory() + "Gi");
             }
-            // 服务最小配置信息
-//            if (resourceRelation.getBeRelatedType() == ResourceType.MIN_SERVICE_INFO) {
-//                ServiceInfoEntity serviceInfo = serviceInfoService.queryServiceInfoEntityById(resourceRelation.getBeRelatedId());
-//                limits.put("min_service_config", JSON.toJSONString(serviceInfo));
-//            }
         }
         operatorCreateTo.getModelTo().setOperatorId(operatorCreateTo.getOperatorTo().getId());
 
@@ -886,7 +872,7 @@ public class TaskEventController {
             }
         }
 
-        return schedule;
+        return pair;
     }
 
     /**
@@ -921,5 +907,4 @@ public class TaskEventController {
             }
         }
     }
-
 }

@@ -25,7 +25,7 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingFactory;
 import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.api.naming.pojo.Instance;
-import com.lamp.atom.schedule.api.AtomOperatorShedule;
+import com.lamp.atom.schedule.api.AtomOperatorSchedule;
 import com.lamp.atom.schedule.api.Schedule;
 import com.lamp.atom.schedule.api.ScheduleReturn;
 import com.lamp.atom.schedule.api.config.OperatorScheduleRpcConfig;
@@ -45,7 +45,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  */
 @Slf4j
-public class OperatorRpcSchedule implements AtomOperatorShedule {
+public class OperatorRpcSchedule implements AtomOperatorSchedule {
 
 	private static String ATOM_RUNTIME_PYTHON_SERVICE_NAME = "atom-runtime-python-service-standalone";
 

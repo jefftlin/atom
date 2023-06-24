@@ -16,8 +16,8 @@ import java.util.List;
 import java.util.Objects;
 
 import com.alibaba.nacos.api.naming.NamingService;
-import com.lamp.atom.schedule.api.AtomOperatorShedule;
-import com.lamp.atom.schedule.api.AtomServiceShedule;
+import com.lamp.atom.schedule.api.AtomOperatorSchedule;
+import com.lamp.atom.schedule.api.AtomServiceSchedule;
 import com.lamp.atom.schedule.api.Schedule;
 import com.lamp.atom.schedule.api.ScheduleReturn;
 import com.lamp.atom.schedule.api.config.AtomScheduleKubernetesConfig;
@@ -51,7 +51,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  */
 @Slf4j
-public class OperatorKubernetesSchedule implements AtomOperatorShedule, AtomServiceShedule {
+public class OperatorKubernetesSchedule implements AtomOperatorSchedule, AtomServiceSchedule {
 
 	@Value("${nacos.config.server-addr}")
 	private String nacosAddr;
@@ -136,8 +136,6 @@ public class OperatorKubernetesSchedule implements AtomOperatorShedule, AtomServ
 	public void uninstallOperators(Schedule schedule) {
 		this.deletePods(schedule);
 	}
-
-
 
 	private void deleteDeployment(Schedule schedule) {
 		OperatorScheduleKubernetesConfig kubernetesConfig = getKubernetesConfig(schedule, atomScheduleKubernetesConfig);

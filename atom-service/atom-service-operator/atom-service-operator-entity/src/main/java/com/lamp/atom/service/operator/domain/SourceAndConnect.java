@@ -21,4 +21,12 @@ public class SourceAndConnect {
     private DataSourceEntity sourceTo;
 
     private ConnectionEntity connectTo;
+
+    public SourceAndConnect() {
+    }
+
+    public SourceAndConnect(DataSourceEntity sourceTo, ConnectionEntity connectTo) {
+        this.sourceTo = sourceTo;
+        this.connectTo = connectTo;
+    }
 }

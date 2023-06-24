@@ -11,8 +11,8 @@
  */
 package com.lamp.atom.schedule.core;
 
-import com.lamp.atom.schedule.api.AtomOperatorShedule;
-import com.lamp.atom.schedule.api.AtomServiceShedule;
+import com.lamp.atom.schedule.api.AtomOperatorSchedule;
+import com.lamp.atom.schedule.api.AtomServiceSchedule;
 import com.lamp.atom.schedule.api.Schedule;
 import com.lamp.atom.schedule.api.ScheduleReturn;
 import com.lamp.atom.schedule.api.config.OperatorScheduleConfig;
@@ -28,7 +28,7 @@ import java.util.Map;
  * @author laohu
  *
  */
-public class AtomScheduleService implements AtomOperatorShedule, AtomServiceShedule {
+public class AtomScheduleService implements AtomOperatorSchedule, AtomServiceSchedule {
 
 	
 	private OperatorKubernetesSchedule kubernetesSchedule;
@@ -38,7 +38,7 @@ public class AtomScheduleService implements AtomOperatorShedule, AtomServiceShed
 	private OperatorScheduleConfig operatorScheduleConfig;
 
 
-	private Map<OperatorRuntimeType,AtomOperatorShedule> atomOperatorScheduleMap = new HashMap<>();
+	private Map<OperatorRuntimeType, AtomOperatorSchedule> atomOperatorScheduleMap = new HashMap<>();
 
 	public AtomScheduleService(OperatorScheduleConfig operatorScheduleConfig) throws Exception {
 		this.operatorScheduleConfig = operatorScheduleConfig;

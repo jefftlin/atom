@@ -11,23 +11,18 @@
  */
 package com.lamp.atom.schedule.api;
 
-import java.util.ArrayList;
-import java.util.List;
+public interface AtomOperatorSchedule {
 
-/**
- * 1.
- * 
- * @author laohu
- *
- */
-public interface AtomServiceShedule {
-
-	public default void createService(Schedule schedule) {
-	}
-
-	public default void closeService(Schedule schedule) {
+	
+	public ScheduleReturn createOperators(Schedule schedule);
+	
+	public default void startOperators(Schedule schedule) {
+		
 	}
 	
-	public default List<Object> queryAllService() {return new ArrayList<>(1);}
-
+	public default void suspendOperators(Schedule schedule) {
+		
+	}
+	
+	public void uninstallOperators(Schedule schedule);
 }

@@ -30,7 +30,7 @@ import com.lamp.atom.schedule.core.AtomScheduleService;
 import lombok.Setter;
 
 /**
- * 1. 从本地读取配置 2. 从nacos读取配置 3.
+ * 1. 从本地读取配置 2. 从nacos读取配置
  * 
  * @author laohu
  *

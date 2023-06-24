@@ -55,12 +55,12 @@ public class ServiceInfoEntity extends BaseEntity {
     private String siImageName;
 
     /**
-     * 服务cpu配置量
+     * 服务cpu配置量，单位为：m，1C=1000m
      */
     private Integer siCpu;
 
     /**
-     * 服务gpu配置量
+     * 服务gpu配置量，单位为：Mi，1Gi=1024Mi
      */
     private Integer siGpu;
 

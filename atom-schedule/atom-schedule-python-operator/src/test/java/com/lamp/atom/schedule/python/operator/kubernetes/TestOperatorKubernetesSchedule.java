@@ -4,17 +4,18 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.lamp.atom.schedule.api.config.DefaultOperatorScheduleKubernetesConfig;
+import com.lamp.atom.service.domain.OperatorRuntimeType;
 import org.junit.Test;
 
 import com.lamp.atom.schedule.api.Schedule;
-import com.lamp.atom.schedule.api.config.OperatorScheduleKubernetesConfig;
 import com.lamp.atom.schedule.api.deploy.Deploy;
 
 public class TestOperatorKubernetesSchedule {
 
 	Schedule schedule = new Schedule();
 
-	OperatorScheduleKubernetesConfig operatorScheduleKubernetesConfig;
+	DefaultOperatorScheduleKubernetesConfig kubernetesConfig = new DefaultOperatorScheduleKubernetesConfig();
 
 	{
 		schedule.setNodeName("test");
@@ -28,8 +29,8 @@ public class TestOperatorKubernetesSchedule {
 		schedule.setLabels(labels);
 
 		Map<String, String> hardwareConfig = new HashMap<>();
-		hardwareConfig.put("cpu", "2");
-		hardwareConfig.put("memory", "1Gi");
+		hardwareConfig.put("cpu", "100m");
+		hardwareConfig.put("memory", "100Mi");
 		schedule.setHardwareConfig(hardwareConfig);
 
 		Map<String, String> envs = new HashMap<>();
@@ -37,16 +38,15 @@ public class TestOperatorKubernetesSchedule {
 		schedule.setEnvs(envs);
 
 		Map<String, String> limits = new HashMap<>();
-		limits.put("cpu", "3");
-		limits.put("memory", "2Gi");
+		limits.put("cpu", "100m");
+		limits.put("memory", "100Mi");
 		schedule.setLimits(limits);
 
-		operatorScheduleKubernetesConfig = new OperatorScheduleKubernetesConfig();
 		try {
 			InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("kubernetesConfig.yaml");
 			byte[] data = new byte[inputStream.available()];
 			inputStream.read(data);
-			operatorScheduleKubernetesConfig.setConfigYaml(new String(data));
+			kubernetesConfig.setConfigYaml(new String(data));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -55,16 +55,17 @@ public class TestOperatorKubernetesSchedule {
 
 	@Test
 	public void testCreateService() throws Exception {
-		OperatorKubernetesSchedule kubernetesSchedule = new OperatorKubernetesSchedule(operatorScheduleKubernetesConfig);
+		OperatorKubernetesSchedule kubernetesSchedule = new OperatorKubernetesSchedule(kubernetesConfig);
 		Deploy deploy = new Deploy();
-		deploy.setCount(4);
+		deploy.setCount(1);
 		schedule.setDeploy(deploy);
+		schedule.setOperatorRuntimeType(OperatorRuntimeType.REASON);
 		kubernetesSchedule.createService(schedule);
 	}
 	
 	@Test
 	public void testCreateOperators() throws Exception {
-		OperatorKubernetesSchedule kubernetesSchedule = new OperatorKubernetesSchedule(operatorScheduleKubernetesConfig);
+		OperatorKubernetesSchedule kubernetesSchedule = new OperatorKubernetesSchedule(kubernetesConfig);
 
 		kubernetesSchedule.createOperators(schedule);
 	}

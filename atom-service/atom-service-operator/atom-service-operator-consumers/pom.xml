@@ -16,11 +16,11 @@
 	<dependencies>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
-			<artifactId>atom-service-operator-service</artifactId>
+			<artifactId>atom-service-operator-common</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
-			<artifactId>atom-service-operator-common</artifactId>
+			<artifactId>atom-service-operator-service</artifactId>
 		</dependency>
         <dependency>
 			<groupId>${project.groupId}</groupId>

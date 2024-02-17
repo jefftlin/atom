@@ -16,7 +16,7 @@ import com.lamp.atom.schedule.api.AtomServiceSchedule;
 import com.lamp.atom.schedule.api.Schedule;
 import com.lamp.atom.schedule.api.ScheduleReturn;
 import com.lamp.atom.schedule.api.config.OperatorScheduleConfig;
-import com.lamp.atom.schedule.python.operator.kubernetes.OperatorKubernetesSchedule;
+import com.lamp.atom.schedule.k8s.operator.OperatorKubernetesSchedule;
 import com.lamp.atom.schedule.python.operator.rpc.OperatorRpcSchedule;
 import com.lamp.atom.service.domain.OperatorRuntimeType;
 

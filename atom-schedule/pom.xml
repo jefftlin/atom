@@ -15,9 +15,10 @@
 	<name>${project.artifactId}</name>
 	<url>http://maven.apache.org</url>
 	<modules>
-		<module>atom-schedule-python-operator</module>
 		<module>atom-schedule-api</module>
 		<module>atom-schedule-core</module>
+		<module>atom-schedule-k8s-operator</module>
+		<module>atom-schedule-python-operator</module>
 	</modules>
 	<dependencyManagement>
 		<dependencies>

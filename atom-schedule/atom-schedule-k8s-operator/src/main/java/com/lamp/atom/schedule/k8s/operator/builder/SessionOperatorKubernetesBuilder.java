@@ -9,17 +9,18 @@
  *MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
  *See the Mulan PubL v2 for more details.
  */
-package com.lamp.atom.schedule.python.operator.kubernetes.builder;
+package com.lamp.atom.schedule.k8s.operator.builder;
 
-import java.io.FileWriter;
-import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 
+import com.alibaba.fastjson.JSON;
 import com.lamp.atom.schedule.api.Schedule;
 import com.lamp.atom.schedule.api.config.OperatorScheduleKubernetesConfig;
 
@@ -29,19 +30,18 @@ import io.fabric8.kubernetes.api.model.EnvVarSource;
 import io.fabric8.kubernetes.api.model.ObjectFieldSelector;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
-import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
-import io.fabric8.kubernetes.api.model.apps.DeploymentFluent.MetadataNested;
-import io.fabric8.kubernetes.api.model.apps.DeploymentFluent.SpecNested;
+import io.fabric8.kubernetes.api.model.batch.v1.Job;
+import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
+import io.fabric8.kubernetes.api.model.batch.v1.JobFluent.MetadataNested;
+import io.fabric8.kubernetes.api.model.batch.v1.JobFluent.SpecNested;
 import lombok.Setter;
-import org.yaml.snakeyaml.Yaml;
 
 /**
- * 主要用于推理,晚上
+ * 训练,数据算子,主要用于晚上
  * @author laohu
  *
  */
-public class StandaloneOperatorKubernetesBuilder extends AbstractOperatorKubernetesBuilder<DeploymentBuilder, Deployment> {
+public class SessionOperatorKubernetesBuilder extends AbstractOperatorKubernetesBuilder<JobBuilder, Job> {
 
 	@Setter
 	private OperatorScheduleKubernetesConfig operatorKubernetesConfig;
@@ -49,29 +49,29 @@ public class StandaloneOperatorKubernetesBuilder extends AbstractOperatorKuberne
 	@Setter
 	private Schedule schedule;
 
+
 	@Override
 	public void job() {
-		job.withApiVersion("apps/v1");
+		job.withApiVersion("batch/v1");
 		// 训练 是job volcano
 		// 推理 是deployment , 推理还有扩容，缩容 ， 起多少个，都不一样呀
-		job.withKind("Deployment");
+		job.withKind("Job");
 	}
 
 	@Override
 	public void metadata() {
-		MetadataNested<DeploymentBuilder> metadata = job.withNewMetadata();
+		MetadataNested<JobBuilder> metadata = job.withNewMetadata();
 		// nvidia.com/gpu
 		metadata
-				// 这里名字如何命名，
-				// 全局名
-			    // 空间名
-				// 场景名
-				// TODO 真麻烦，好难。
-				.withName(KubernetesOperatorConstants.STANDALONE_OPERATOR_NAME_PREFIX
-						+ this.schedule.getNodeName())
+				// GPU 还是cpu镜像
+				.withName(KubernetesOperatorConstants.SESSION_OPERATOR_NAME_PREFIX
+					+ this.schedule.getNodeName()
+					+ "-"
+					+ new SimpleDateFormat("yyyyMMddHHmmss").format(new Date(System.currentTimeMillis())))
 				// 标签，需要几个
-				//
-				.withLabels(this.schedule.getLabels());
+				// 第一个 算子的名字+序列
+				// 的哥
+				.withLabels(schedule.getLabels());
 		metadata.endMetadata();
 	}
 
@@ -95,20 +95,31 @@ public class StandaloneOperatorKubernetesBuilder extends AbstractOperatorKuberne
 		}
 		envList.add(new EnvVar("docker", "true", null));
 		envList.add(new EnvVar("runtime_model", "standalone", null));
-		ObjectFieldSelector podId = new ObjectFieldSelector();
-		podId.setFieldPath("status.podIP");
+		envList.add(new EnvVar("operator-data", JSON.toJSONString(schedule.getObject()), null));
+		ObjectFieldSelector podIP = new ObjectFieldSelector();
+		podIP.setFieldPath("status.podIP");
+		podIP.setApiVersion("v1");
 		EnvVarSource nodeIp = new EnvVarSource();
-		nodeIp.setFieldRef(podId);
+		nodeIp.setFieldRef(podIP);
 		envList.add(new EnvVar("node_ip", null, nodeIp));
 		
+		ObjectFieldSelector podId = new ObjectFieldSelector();
+		podId.setFieldPath("status.podIP");
+		podId.setApiVersion("v1");
+		EnvVarSource nodeId = new EnvVarSource();
+		nodeId.setFieldRef(podId);
+		envList.add(new EnvVar("node_id", null, nodeId));
+		
+		
+		
 		String value = schedule.getHardwareConfig().get("nvidia.com/gpu");
-		SpecNested<DeploymentBuilder> spec = job.withNewSpec();
-		spec.withReplicas(this.schedule.getDeploy().getCount());
+		SpecNested<JobBuilder> spec = job.withNewSpec();
 		spec.withNewTemplate()
 				.withNewSpec()
-				.withRestartPolicy("Always")
+				.withRestartPolicy("Never")
 				.withHostNetwork(true)
-				.addNewContainer().withName(this.schedule.getNodeName())
+				.addNewContainer()
+				.withName(this.schedule.getNodeName())
 				.withImage(Objects.isNull(value)
 						? this.operatorKubernetesConfig.getCpuContainerName()
 						: this.operatorKubernetesConfig.getGpuContainerName())
@@ -122,13 +133,6 @@ public class StandaloneOperatorKubernetesBuilder extends AbstractOperatorKuberne
 
 	@Override
 	public void preBuild() {
-		this.job = new DeploymentBuilder();
-
-		Yaml yaml = new Yaml();
-		try {
-			yaml.dump(job.build(), new FileWriter("standalone.yaml"));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		this.job = new JobBuilder();
 	}
 }

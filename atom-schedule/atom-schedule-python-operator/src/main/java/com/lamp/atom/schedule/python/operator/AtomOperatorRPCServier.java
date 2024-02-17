@@ -11,6 +11,8 @@
  */
 package com.lamp.atom.schedule.python.operator;
 
+import com.lamp.atom.schedule.api.runtime.CreateOperator;
+import com.lamp.atom.schedule.api.runtime.Result;
 import com.lamp.light.annotation.Body;
 import com.lamp.light.annotation.POST;
 

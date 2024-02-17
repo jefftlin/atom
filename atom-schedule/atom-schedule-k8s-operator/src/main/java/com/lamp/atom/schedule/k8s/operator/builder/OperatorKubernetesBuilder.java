@@ -1,4 +1,4 @@
-package com.lamp.atom.schedule.python.operator.kubernetes.builder;
+package com.lamp.atom.schedule.k8s.operator.builder;
 
 public interface OperatorKubernetesBuilder {
 

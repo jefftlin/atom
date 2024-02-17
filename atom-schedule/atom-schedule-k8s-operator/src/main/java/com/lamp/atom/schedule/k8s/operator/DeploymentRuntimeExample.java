@@ -1,10 +1,10 @@
-package com.lamp.atom.schedule.python.operator.kubernetes;
+package com.lamp.atom.schedule.k8s.operator;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.lamp.atom.schedule.python.operator.RuntimeExample;
-import com.lamp.atom.schedule.python.operator.RuntimeStatus;
+import com.lamp.atom.schedule.api.runtime.RuntimeExample;
+import com.lamp.atom.schedule.api.runtime.RuntimeStatus;
 
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import lombok.AllArgsConstructor;

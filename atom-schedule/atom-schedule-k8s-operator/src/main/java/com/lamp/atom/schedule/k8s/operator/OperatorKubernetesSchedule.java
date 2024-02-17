@@ -10,7 +10,7 @@
  *MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
  *See the Mulan PubL v2 for more details.
  */
-package com.lamp.atom.schedule.python.operator.kubernetes;
+package com.lamp.atom.schedule.k8s.operator;
 
 import java.util.List;
 import java.util.Objects;
@@ -26,8 +26,8 @@ import com.lamp.atom.schedule.api.config.OperatorScheduleKubernetesConfigFactory
 import com.lamp.atom.schedule.api.deploy.AtomRuntimeInstanceConstraints;
 import com.lamp.atom.schedule.api.deploy.AtomInstances;
 
-import com.lamp.atom.schedule.python.operator.kubernetes.builder.SessionOperatorKubernetesBuilder;
-import com.lamp.atom.schedule.python.operator.kubernetes.builder.StandaloneOperatorKubernetesBuilder;
+import com.lamp.atom.schedule.k8s.operator.builder.SessionOperatorKubernetesBuilder;
+import com.lamp.atom.schedule.k8s.operator.builder.StandaloneOperatorKubernetesBuilder;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;

@@ -1,10 +1,11 @@
-package com.lamp.atom.schedule.python.operator.kubernetes;
+package com.lamp.atom.schedule.k8s.operator.kubernetes;
 
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.lamp.atom.schedule.api.config.DefaultOperatorScheduleKubernetesConfig;
+import com.lamp.atom.schedule.k8s.operator.OperatorKubernetesSchedule;
 import com.lamp.atom.service.domain.OperatorRuntimeType;
 import org.junit.Test;
 

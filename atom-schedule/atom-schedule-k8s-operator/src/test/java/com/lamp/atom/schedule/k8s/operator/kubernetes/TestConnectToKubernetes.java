@@ -1,4 +1,4 @@
-package com.lamp.atom.schedule.python.operator.kubernetes;
+package com.lamp.atom.schedule.k8s.operator.kubernetes;
 
 import com.lamp.atom.schedule.api.config.AtomScheduleKubernetesConfig;
 import com.lamp.atom.schedule.api.config.DefaultOperatorScheduleKubernetesConfig;

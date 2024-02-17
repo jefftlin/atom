@@ -43,8 +43,7 @@ import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 
- * 
+ *
  * 普通job 定时job 批量job Resource cpu:2 nvidia.com/gpu: 2
  * 
  * @author laohu
@@ -54,7 +53,7 @@ import lombok.extern.slf4j.Slf4j;
 public class OperatorKubernetesSchedule implements AtomOperatorSchedule, AtomServiceSchedule {
 
 	@Value("${nacos.config.server-addr}")
-	private String nacosAddr;
+	private String nacosServerAddr;
 	@Value("${nacos.config.namespace}")
 	private String namespace;
 

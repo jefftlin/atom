@@ -30,13 +30,11 @@ import java.util.Map;
  */
 public class AtomScheduleService implements AtomOperatorSchedule, AtomServiceSchedule {
 
-	
 	private OperatorKubernetesSchedule kubernetesSchedule;
 	
 	private OperatorRpcSchedule rpcSchedule;
 	
 	private OperatorScheduleConfig operatorScheduleConfig;
-
 
 	private Map<OperatorRuntimeType, AtomOperatorSchedule> atomOperatorScheduleMap = new HashMap<>();
 

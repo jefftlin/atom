@@ -36,18 +36,17 @@ import lombok.Setter;
  *
  */
 @Component
-@ConfigurationProperties(prefix="atom.schedule")
 public class ScheduleSuper implements BeanFactoryAware {
-
-	private BeanFactory beanFactory;
-
-	@Setter
-	private OperatorScheduleConfig operatorScheduleConfig = new OperatorScheduleConfig();
-
-	private AtomScheduleService atomScheduleService;
 
 	@Autowired
 	private ApplicationContext appContext;
+
+	private BeanFactory beanFactory;
+
+	@Autowired
+	private OperatorScheduleConfig operatorScheduleConfig;
+
+	private AtomScheduleService atomScheduleService;
 
 	@PostConstruct
 	private void init() throws Exception {
